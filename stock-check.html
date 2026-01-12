@@ -1,1 +1,500 @@
-stock-check.html content here...
+<!DOCTYPE html>
+<html lang="th">
+ 
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เช็คยอดน้ำคงเหลือ | น้ำดื่มเกียรติศักดิ์</title>
+    <meta name="description" content="เช็คยอดน้ำดื่มคงเหลือแบบ Real-time">
+ 
+    <!-- Google Font: Kanit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+ 
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+ 
+    <!-- PapaParse -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+ 
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Kanit', sans-serif;
+        }
+ 
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+ 
+        .container {
+            width: 100%;
+            max-width: 380px;
+        }
+ 
+        /* Main Card */
+        .stock-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 28px;
+            padding: 32px 28px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+ 
+        .stock-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+        }
+ 
+        /* Header */
+        .header {
+            margin-bottom: 24px;
+        }
+ 
+        .logo {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
+        }
+ 
+        .logo i {
+            font-size: 32px;
+            color: white;
+        }
+ 
+        .title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+ 
+        .subtitle {
+            font-size: 14px;
+            color: #64748b;
+        }
+ 
+        /* Stock Display */
+        .stock-display {
+            padding: 28px 0;
+            border-top: 1px solid #f1f5f9;
+            border-bottom: 1px solid #f1f5f9;
+            margin: 20px 0;
+        }
+ 
+        .stock-label {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+ 
+        .stock-number {
+            font-size: 72px;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 8px;
+            transition: all 0.5s ease;
+        }
+ 
+        .stock-number.high {
+            background: linear-gradient(135deg, #10b981, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+ 
+        .stock-number.medium {
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+ 
+        .stock-number.low {
+            background: linear-gradient(135deg, #ef4444, #f87171);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+ 
+        .stock-unit {
+            font-size: 18px;
+            color: #94a3b8;
+        }
+ 
+        /* Status Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+ 
+        .status-badge.ok {
+            background: rgba(16, 185, 129, 0.15);
+            color: #059669;
+        }
+ 
+        .status-badge.warning {
+            background: rgba(245, 158, 11, 0.15);
+            color: #d97706;
+        }
+ 
+        .status-badge.danger {
+            background: rgba(239, 68, 68, 0.15);
+            color: #dc2626;
+        }
+ 
+        .status-badge i {
+            font-size: 16px;
+        }
+ 
+        /* Stats Row */
+        .stats-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+ 
+        .stat-item {
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 16px;
+        }
+ 
+        .stat-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 8px;
+            font-size: 14px;
+        }
+ 
+        .stat-icon.blue {
+            background: linear-gradient(135deg, #3b82f6, #60a5fa);
+            color: white;
+        }
+ 
+        .stat-icon.green {
+            background: linear-gradient(135deg, #10b981, #34d399);
+            color: white;
+        }
+ 
+        .stat-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+ 
+        .stat-label {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+ 
+        /* Refresh Button */
+        .refresh-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+ 
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(102, 126, 234, 0.4);
+        }
+ 
+        .refresh-btn:active {
+            transform: scale(0.98);
+        }
+ 
+        .refresh-btn.loading i {
+            animation: spin 1s linear infinite;
+        }
+ 
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+ 
+        /* Google Form Button */
+        .form-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 14px;
+            margin-top: 12px;
+            background: linear-gradient(135deg, #10b981, #34d399);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+        }
+ 
+        .form-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(16, 185, 129, 0.4);
+        }
+ 
+        .form-btn:active {
+            transform: scale(0.98);
+        }
+ 
+        /* Footer */
+        .footer {
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+ 
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+ 
+        @keyframes pulse {
+ 
+            0%,
+            100% {
+                opacity: 1;
+            }
+ 
+            50% {
+                opacity: 0.5;
+            }
+        }
+ 
+        /* Loading State */
+        .loading-skeleton {
+            background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 8px;
+        }
+ 
+        @keyframes shimmer {
+            0% {
+                background-position: 200% 0;
+            }
+ 
+            100% {
+                background-position: -200% 0;
+            }
+        }
+ 
+        /* Link to Dashboard */
+        .dashboard-link {
+            display: block;
+            text-align: center;
+            margin-top: 16px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 13px;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+ 
+        .dashboard-link:hover {
+            color: white;
+        }
+    </style>
+</head>
+ 
+<body>
+    <div class="container">
+        <div class="stock-card">
+            <!-- Header -->
+            <div class="header">
+                <div class="logo">
+                    <i class="fas fa-tint"></i>
+                </div>
+                <h1 class="title">น้ำดื่มเกียรติศักดิ์</h1>
+                <p class="subtitle">ยอดน้ำคงเหลือ สวัสดิการพนักงาน</p>
+            </div>
+ 
+            <!-- Status Badge -->
+            <div id="statusBadge" class="status-badge ok">
+                <i class="fas fa-check-circle"></i>
+                <span>พร้อมเบิก</span>
+            </div>
+ 
+            <!-- Stock Display -->
+            <div class="stock-display">
+                <p class="stock-label">คงเหลือ</p>
+                <p id="stockNumber" class="stock-number high">--</p>
+                <p class="stock-unit">แพ็ค</p>
+            </div>
+ 
+            <!-- Stats Row -->
+            <div class="stats-row">
+                <div class="stat-item">
+                    <div class="stat-icon blue">
+                        <i class="fas fa-arrow-down"></i>
+                    </div>
+                    <p id="stockIn" class="stat-value">--</p>
+                    <p class="stat-label">เติมเข้า</p>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon green">
+                        <i class="fas fa-arrow-up"></i>
+                    </div>
+                    <p id="stockOut" class="stat-value">--</p>
+                    <p class="stat-label">เบิกออก</p>
+                </div>
+            </div>
+ 
+            <!-- Refresh Button -->
+            <button id="refreshBtn" class="refresh-btn" onclick="fetchData()">
+                <i class="fas fa-sync-alt"></i>
+                <span>รีเฟรชข้อมูล</span>
+            </button>
+ 
+            <!-- Google Form Button -->
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLSfAXmv1HWwQKAnpL2pwwx9h_gV3zEbuqpVEbsoKLuo_5of51Q/viewform"
+                target="_blank" class="form-btn">
+                <i class="fas fa-clipboard-list"></i>
+                <span>เบิกน้ำ / เติมสต๊อก</span>
+            </a>
+ 
+            <!-- Footer -->
+            <div class="footer">
+                <span class="live-dot"></span>
+                <span>อัปเดตล่าสุด: <span id="lastUpdate">--</span></span>
+            </div>
+        </div>
+ 
+        <a href="index.html" class="dashboard-link">
+            <i class="fas fa-chart-line"></i> ดู Dashboard แบบเต็ม
+        </a>
+    </div>
+ 
+    <script>
+        const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQbc1ipPsHQl1EqIjrofBe2DnDW-eeGFruc5fLZwWmabwOZz0z28AOis3auKHCVL6K9E4kqprIRKv4x/pub?gid=708352832&single=true&output=csv';
+ 
+        // Auto refresh every 2 minutes
+        setInterval(fetchData, 2 * 60 * 1000);
+ 
+        // Fetch on load
+        document.addEventListener('DOMContentLoaded', fetchData);
+ 
+        function fetchData() {
+            const btn = document.getElementById('refreshBtn');
+            btn.classList.add('loading');
+ 
+            Papa.parse(GOOGLE_SHEET_CSV_URL, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: function (results) {
+                    processData(results.data);
+                    btn.classList.remove('loading');
+                },
+                error: function (error) {
+                    console.error('Error:', error);
+                    btn.classList.remove('loading');
+                    alert('ไม่สามารถดึงข้อมูลได้ กรุณาลองใหม่');
+                }
+            });
+        }
+ 
+        function processData(data) {
+            let stockIn = 0;
+            let stockOut = 0;
+ 
+            data.forEach(row => {
+                const type = row['ระบบ น้ำดื่มเกียรติศักดิ์ คุณมาใช้บริการ จุดไหน'] || '';
+                const qty = parseInt(row['จำนวนแพ็คที่เบิก จำนวน/แพ็ค']) || 0;
+ 
+                if (type.includes('เติม') || type.includes('Stock') || type.includes('สต๊อก')) {
+                    stockIn += qty;
+                } else if (type.includes('เบิก')) {
+                    stockOut += qty;
+                }
+            });
+ 
+            const remaining = stockIn - stockOut;
+ 
+            // Update DOM
+            document.getElementById('stockIn').textContent = stockIn.toLocaleString();
+            document.getElementById('stockOut').textContent = stockOut.toLocaleString();
+            document.getElementById('stockNumber').textContent = remaining.toLocaleString();
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+ 
+            // Update status and colors
+            const stockNumber = document.getElementById('stockNumber');
+            const statusBadge = document.getElementById('statusBadge');
+ 
+            stockNumber.className = 'stock-number';
+            statusBadge.className = 'status-badge';
+ 
+            if (remaining >= 20) {
+                stockNumber.classList.add('high');
+                statusBadge.classList.add('ok');
+                statusBadge.innerHTML = '<i class="fas fa-check-circle"></i><span>พร้อมเบิก</span>';
+            } else if (remaining >= 10) {
+                stockNumber.classList.add('medium');
+                statusBadge.classList.add('warning');
+                statusBadge.innerHTML = '<i class="fas fa-exclamation-triangle"></i><span>เหลือน้อย</span>';
+            } else {
+                stockNumber.classList.add('low');
+                statusBadge.classList.add('danger');
+                statusBadge.innerHTML = '<i class="fas fa-times-circle"></i><span>ใกล้หมด!</span>';
+            }
+        }
+    </script>
+</body>
+ 
+</html>
