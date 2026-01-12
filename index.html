@@ -1,1 +1,1148 @@
-...
+<!DOCTYPE html>
+<html lang="th">
+ 
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KPI Dashboard | น้ำดื่มเกียรติศักดิ์</title>
+    <meta name="description" content="KPI Dashboard สำหรับติดตามผลการดำเนินงานสวัสดิการน้ำดื่ม">
+ 
+    <!-- Google Font: Kanit + Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+ 
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+ 
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+ 
+    <!-- PapaParse for CSV -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+ 
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+ 
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'kanit': ['Kanit', 'sans-serif'],
+                        'inter': ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+ 
+    <style>
+        * {
+            font-family: 'Kanit', 'Inter', sans-serif;
+        }
+ 
+        body {
+            background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 50%, #f5f7ff 100%);
+            min-height: 100vh;
+        }
+ 
+        /* Animated Gradient Background - Light Theme */
+        .bg-animated {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 20%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 40% 80%, rgba(6, 182, 212, 0.06) 0%, transparent 40%),
+                radial-gradient(ellipse at 60% 20%, rgba(16, 185, 129, 0.06) 0%, transparent 40%);
+            z-index: 0;
+            animation: bgPulse 10s ease-in-out infinite alternate;
+        }
+ 
+        @keyframes bgPulse {
+            0% {
+                opacity: 0.8;
+            }
+ 
+            100% {
+                opacity: 1;
+            }
+        }
+ 
+        /* Glassmorphism Card Base - Light Theme */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            border-radius: 20px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+ 
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.85);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            transform: translateY(-4px);
+        }
+ 
+        /* KPI Card Styles */
+        .kpi-card {
+            position: relative;
+            overflow: hidden;
+        }
+ 
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            border-radius: 20px 20px 0 0;
+        }
+ 
+        .kpi-card.blue::before {
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+        }
+ 
+        .kpi-card.green::before {
+            background: linear-gradient(90deg, #10b981, #34d399);
+        }
+ 
+        .kpi-card.orange::before {
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+        }
+ 
+        .kpi-card.purple::before {
+            background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+        }
+ 
+        .kpi-card.cyan::before {
+            background: linear-gradient(90deg, #06b6d4, #22d3ee);
+        }
+ 
+        .kpi-card.pink::before {
+            background: linear-gradient(90deg, #ec4899, #f472b6);
+        }
+ 
+        /* Icon Containers */
+        .icon-box {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            transition: all 0.3s ease;
+        }
+ 
+        .icon-box.blue {
+            background: linear-gradient(135deg, #3b82f6, #60a5fa);
+            color: white;
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
+        }
+ 
+        .icon-box.green {
+            background: linear-gradient(135deg, #10b981, #34d399);
+            color: white;
+            box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
+        }
+ 
+        .icon-box.orange {
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            color: white;
+            box-shadow: 0 8px 24px rgba(245, 158, 11, 0.3);
+        }
+ 
+        .icon-box.purple {
+            background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+            color: white;
+            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.3);
+        }
+ 
+        .icon-box.cyan {
+            background: linear-gradient(135deg, #06b6d4, #22d3ee);
+            color: white;
+            box-shadow: 0 8px 24px rgba(6, 182, 212, 0.3);
+        }
+ 
+        .icon-box.pink {
+            background: linear-gradient(135deg, #ec4899, #f472b6);
+            color: white;
+            box-shadow: 0 8px 24px rgba(236, 72, 153, 0.3);
+        }
+ 
+        /* Progress Bar */
+        .progress-bar {
+            height: 6px;
+            background: rgba(0, 0, 0, 0.06);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+ 
+        .progress-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 1s ease;
+        }
+ 
+        .progress-fill.blue {
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+        }
+ 
+        .progress-fill.green {
+            background: linear-gradient(90deg, #10b981, #34d399);
+        }
+ 
+        .progress-fill.orange {
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+        }
+ 
+        .progress-fill.purple {
+            background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+        }
+ 
+        /* Trend Indicators */
+        .trend-up {
+            color: #059669;
+            background: rgba(16, 185, 129, 0.15);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+ 
+        .trend-down {
+            color: #dc2626;
+            background: rgba(239, 68, 68, 0.15);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+ 
+        /* Chart Container */
+        .chart-container {
+            position: relative;
+            height: 280px;
+        }
+ 
+        .chart-container-sm {
+            position: relative;
+            height: 200px;
+        }
+ 
+        /* Table Styles */
+        .data-table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+ 
+        .data-table thead th {
+            position: sticky;
+            top: 0;
+            background: rgba(248, 250, 252, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 10;
+            padding: 16px;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            border-bottom: 2px solid #e2e8f0;
+        }
+ 
+        .data-table tbody tr {
+            transition: all 0.2s ease;
+        }
+ 
+        .data-table tbody tr:hover {
+            background: rgba(59, 130, 246, 0.05);
+        }
+ 
+        .data-table tbody td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #334155;
+        }
+ 
+        /* Filter Dropdown */
+        .filter-select {
+            background: white;
+            border: 1px solid #e2e8f0;
+            color: #334155;
+            padding: 10px 16px;
+            border-radius: 12px;
+            outline: none;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            min-width: 140px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+ 
+        .filter-select:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+ 
+        .filter-select option {
+            background: white;
+            color: #334155;
+        }
+ 
+        /* Button Styles */
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+ 
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+        }
+ 
+        /* Badge Styles */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+ 
+        .badge-blue {
+            background: rgba(59, 130, 246, 0.12);
+            color: #2563eb;
+        }
+ 
+        .badge-green {
+            background: rgba(16, 185, 129, 0.12);
+            color: #059669;
+        }
+ 
+        .badge-orange {
+            background: rgba(245, 158, 11, 0.12);
+            color: #d97706;
+        }
+ 
+        .badge-purple {
+            background: rgba(139, 92, 246, 0.12);
+            color: #7c3aed;
+        }
+ 
+        /* Stat Number */
+        .stat-number {
+            font-weight: 700;
+            font-size: 2.5rem;
+            line-height: 1;
+            background: linear-gradient(135deg, #1e293b, #334155);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+ 
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+ 
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.03);
+            border-radius: 3px;
+        }
+ 
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 3px;
+        }
+ 
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.25);
+        }
+ 
+        /* Ranking List */
+        .rank-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            background: rgba(0, 0, 0, 0.02);
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+ 
+        .rank-item:hover {
+            background: rgba(59, 130, 246, 0.05);
+            border-color: rgba(59, 130, 246, 0.1);
+            transform: translateX(4px);
+        }
+ 
+        .rank-number {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 13px;
+        }
+ 
+        .rank-1 {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #1a1a1a;
+        }
+ 
+        .rank-2 {
+            background: linear-gradient(135deg, #94a3b8, #64748b);
+            color: white;
+        }
+ 
+        .rank-3 {
+            background: linear-gradient(135deg, #d97706, #b45309);
+            color: white;
+        }
+ 
+        .rank-other {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+ 
+        /* Divider */
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.08), transparent);
+            margin: 16px 0;
+        }
+ 
+        /* Section Title */
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+ 
+        .section-title i {
+            font-size: 16px;
+        }
+ 
+        /* Text Colors */
+        .text-primary {
+            color: #1e293b;
+        }
+ 
+        .text-secondary {
+            color: #64748b;
+        }
+ 
+        .text-muted {
+            color: #94a3b8;
+        }
+ 
+        /* Responsive */
+        @media (max-width: 768px) {
+            .stat-number {
+                font-size: 1.8rem;
+            }
+        }
+ 
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+ 
+        .toast.success {
+            background: linear-gradient(135deg, #10b981, #34d399);
+        }
+ 
+        .toast.error {
+            background: linear-gradient(135deg, #ef4444, #f87171);
+        }
+ 
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+ 
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+ 
+<body class="font-kanit antialiased">
+    <!-- Animated Background -->
+    <div class="bg-animated"></div>
+ 
+    <!-- Main Container -->
+    <div class="relative z-10 min-h-screen">
+ 
+        <!-- Top Navigation Bar -->
+        <nav class="glass-card mx-4 mt-4 mb-6 px-6 py-4" style="border-radius: 16px;">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <!-- Logo & Title -->
+                <div class="flex items-center gap-4">
+                    <div class="icon-box blue">
+                        <i class="fas fa-tint"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-primary">KPI Dashboard</h1>
+                        <p class="text-sm text-secondary">น้ำดื่มเกียรติศักดิ์ - Welfare Water Analytics</p>
+                    </div>
+                </div>
+ 
+                <!-- Filters & Actions -->
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-calendar-alt text-secondary text-sm"></i>
+                        <select id="monthFilter" class="filter-select" onchange="filterData()">
+                            <option value="all">ทุกเดือน</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-calendar text-secondary text-sm"></i>
+                        <select id="yearFilter" class="filter-select" onchange="filterData()">
+                            <option value="all">ทุกปี</option>
+                        </select>
+                    </div>
+                    <label for="csvUpload" class="btn-primary flex items-center gap-2 cursor-pointer">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <span>Upload CSV</span>
+                    </label>
+                    <input type="file" id="csvUpload" accept=".csv" class="hidden" onchange="handleFileUpload(event)">
+ 
+                    <!-- Live Status Indicator -->
+                    <div id="liveStatus"
+                        class="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-50 border border-green-200">
+                        <span class="relative flex h-3 w-3">
+                            <span
+                                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                        </span>
+                        <span class="text-xs text-green-700">Live</span>
+                        <span id="lastUpdate" class="text-xs text-green-600">-</span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+ 
+        <!-- Main Content -->
+        <div class="container mx-auto px-4 pb-8 max-w-7xl">
+ 
+            <!-- KPI Cards Row -->
+            <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+                <!-- KPI 1: Total Stock In -->
+                <div class="glass-card kpi-card blue p-5">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="icon-box blue"><i class="fas fa-arrow-down"></i></div>
+                        <span class="trend-up"><i class="fas fa-arrow-up text-xs"></i> +12%</span>
+                    </div>
+                    <p class="text-secondary text-sm mb-1">น้ำเข้าสต๊อก</p>
+                    <p id="kpiStockIn" class="stat-number">0</p>
+                    <p class="text-muted text-xs mt-2">แพ็ค</p>
+                    <div class="progress-bar mt-3">
+                        <div id="progressStockIn" class="progress-fill blue" style="width: 0%"></div>
+                    </div>
+                </div>
+ 
+                <!-- KPI 2: Total Stock Out -->
+                <div class="glass-card kpi-card green p-5">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="icon-box green"><i class="fas fa-arrow-up"></i></div>
+                        <span class="trend-up"><i class="fas fa-arrow-up text-xs"></i> +8%</span>
+                    </div>
+                    <p class="text-secondary text-sm mb-1">เบิกน้ำออก</p>
+                    <p id="kpiStockOut" class="stat-number">0</p>
+                    <p class="text-muted text-xs mt-2">แพ็ค</p>
+                    <div class="progress-bar mt-3">
+                        <div id="progressStockOut" class="progress-fill green" style="width: 0%"></div>
+                    </div>
+                </div>
+ 
+                <!-- KPI 3: Remaining -->
+                <div class="glass-card kpi-card orange p-5">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="icon-box orange"><i class="fas fa-box"></i></div>
+                        <span class="badge badge-orange"><i class="fas fa-warehouse text-xs"></i> Stock</span>
+                    </div>
+                    <p class="text-secondary text-sm mb-1">คงเหลือ</p>
+                    <p id="kpiRemaining" class="stat-number">0</p>
+                    <p class="text-muted text-xs mt-2">แพ็ค</p>
+                    <div class="progress-bar mt-3">
+                        <div id="progressRemaining" class="progress-fill orange" style="width: 0%"></div>
+                    </div>
+                </div>
+ 
+                <!-- KPI 4: Transactions -->
+                <div class="glass-card kpi-card purple p-5">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="icon-box purple"><i class="fas fa-exchange-alt"></i></div>
+                        <span class="badge badge-purple"><i class="fas fa-receipt text-xs"></i></span>
+                    </div>
+                    <p class="text-secondary text-sm mb-1">รายการทั้งหมด</p>
+                    <p id="kpiTransactions" class="stat-number">0</p>
+                    <p class="text-muted text-xs mt-2">รายการ</p>
+                    <div class="progress-bar mt-3">
+                        <div id="progressTrans" class="progress-fill purple" style="width: 75%"></div>
+                    </div>
+                </div>
+ 
+                <!-- KPI 5: Usage Ratio -->
+                <div class="glass-card kpi-card cyan p-5">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="icon-box cyan"><i class="fas fa-percentage"></i></div>
+                    </div>
+                    <p class="text-secondary text-sm mb-1">อัตราใช้งาน</p>
+                    <p id="kpiRatio" class="stat-number">0%</p>
+                    <p class="text-muted text-xs mt-2">เบิก/รับเข้า</p>
+                    <div class="progress-bar mt-3">
+                        <div id="progressRatio" class="progress-fill blue" style="width: 0%"></div>
+                    </div>
+                </div>
+ 
+                <!-- KPI 6: Top Department -->
+                <div class="glass-card kpi-card pink p-5">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="icon-box pink"><i class="fas fa-trophy"></i></div>
+                        <span class="badge badge-orange"><i class="fas fa-crown text-xs"></i> #1</span>
+                    </div>
+                    <p class="text-secondary text-sm mb-1">แผนก Top</p>
+                    <p id="kpiTopDept" class="text-lg font-bold text-primary truncate">-</p>
+                    <p id="kpiTopDeptValue" class="text-muted text-xs mt-1">0 แพ็ค</p>
+                    <div class="progress-bar mt-3">
+                        <div class="progress-fill orange" style="width: 100%"></div>
+                    </div>
+                </div>
+            </section>
+ 
+            <!-- Charts Row 1 -->
+            <section class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+                <!-- Daily Trend Chart -->
+                <div class="glass-card p-5 lg:col-span-2">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="section-title"><i class="fas fa-chart-line text-cyan-500"></i>
+                            แนวโน้มการเบิกน้ำรายวัน</h3>
+                        <span class="badge badge-blue"><i class="fas fa-calendar-week"></i> 30 วันล่าสุด</span>
+                    </div>
+                    <div class="chart-container"><canvas id="dailyTrendChart"></canvas></div>
+                </div>
+ 
+                <!-- Donut Chart: Usage Ratio -->
+                <div class="glass-card p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="section-title"><i class="fas fa-chart-pie text-purple-500"></i> สัดส่วนการใช้งาน</h3>
+                    </div>
+                    <div class="chart-container-sm flex items-center justify-center"><canvas
+                            id="usageDonutChart"></canvas></div>
+                    <div class="divider"></div>
+                    <div class="grid grid-cols-2 gap-4 text-center">
+                        <div>
+                            <p class="text-2xl font-bold text-green-600" id="donutStockIn">0</p>
+                            <p class="text-xs text-secondary">เข้าสต๊อก</p>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold text-blue-600" id="donutStockOut">0</p>
+                            <p class="text-xs text-secondary">เบิกออก</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+ 
+            <!-- Charts Row 2 -->
+            <section class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+                <!-- Monthly Bar Chart -->
+                <div class="glass-card p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="section-title"><i class="fas fa-chart-bar text-blue-500"></i> สถิติรายเดือน</h3>
+                    </div>
+                    <div class="chart-container"><canvas id="monthlyBarChart"></canvas></div>
+                </div>
+ 
+                <!-- Hourly Activity Chart -->
+                <div class="glass-card p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="section-title"><i class="fas fa-clock text-orange-500"></i> กิจกรรมตามช่วงเวลา</h3>
+                    </div>
+                    <div class="chart-container"><canvas id="hourlyChart"></canvas></div>
+                </div>
+            </section>
+ 
+            <!-- Rankings Row -->
+            <section class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+                <!-- Top 5 Employees -->
+                <div class="glass-card p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="section-title"><i class="fas fa-users text-green-500"></i> Top 5 พนักงานเบิกบ่อย</h3>
+                        <span class="badge badge-green"><i class="fas fa-medal"></i> Ranking</span>
+                    </div>
+                    <div id="top5Employees"></div>
+                </div>
+ 
+                <!-- Top 5 Departments -->
+                <div class="glass-card p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="section-title"><i class="fas fa-building text-purple-500"></i> Top 5 ต้นสังกัด/แผนก
+                        </h3>
+                        <span class="badge badge-purple"><i class="fas fa-chart-bar"></i> By Volume</span>
+                    </div>
+                    <div id="top5Departments"></div>
+                </div>
+            </section>
+ 
+            <!-- Data Table -->
+            <section class="glass-card p-5">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+                    <h3 class="section-title"><i class="fas fa-table text-blue-500"></i> รายการล่าสุด</h3>
+                    <div class="flex items-center gap-3">
+                        <span id="tableCount" class="badge badge-blue"><i class="fas fa-database"></i> 0 รายการ</span>
+                        <span id="tableStockIn" class="badge badge-green"><i class="fas fa-arrow-down"></i> เติม:
+                            0</span>
+                        <span id="tableStockOut" class="badge badge-orange"><i class="fas fa-arrow-up"></i> เบิก:
+                            0</span>
+                    </div>
+                </div>
+ 
+                <div class="overflow-x-auto max-h-[400px] overflow-y-auto rounded-xl border border-gray-100">
+                    <table class="data-table w-full bg-white">
+                        <thead>
+                            <tr>
+                                <th class="text-left">#</th>
+                                <th class="text-left">วันที่/เวลา</th>
+                                <th class="text-left">ประเภท</th>
+                                <th class="text-left">ชื่อ-นามสกุล</th>
+                                <th class="text-left">ต้นสังกัด</th>
+                                <th class="text-right">จำนวน</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+ 
+            <!-- Footer -->
+            <footer class="mt-8 text-center text-secondary text-sm py-4">
+                <p><i class="fas fa-tint mr-1 text-blue-500"></i> KPI Dashboard - น้ำดื่มเกียรติศักดิ์ © 2025</p>
+            </footer>
+        </div>
+    </div>
+ 
+    <script>
+        // ================== GLOBAL VARIABLES ==================
+        let allData = [];
+        let filteredData = [];
+        let charts = {};
+        let refreshInterval = null;
+ 
+        // Google Sheets CSV URL (Published - Real-time)
+        const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQbc1ipPsHQl1EqIjrofBe2DnDW-eeGFruc5fLZwWmabwOZz0z28AOis3auKHCVL6K9E4kqprIRKv4x/pub?gid=708352832&single=true&output=csv';
+ 
+        // Auto-refresh interval (in milliseconds) - 2 minutes for real-time sync
+        const REFRESH_INTERVAL_MS = 2 * 60 * 1000;
+ 
+        // Thai month names
+        const thaiMonths = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+        const thaiMonthsFull = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+ 
+        // Chart color palette
+        const colors = {
+            blue: { main: '#3b82f6', light: 'rgba(59, 130, 246, 0.15)', gradient: ['#3b82f6', '#60a5fa'] },
+            green: { main: '#10b981', light: 'rgba(16, 185, 129, 0.15)', gradient: ['#10b981', '#34d399'] },
+            orange: { main: '#f59e0b', light: 'rgba(245, 158, 11, 0.15)', gradient: ['#f59e0b', '#fbbf24'] },
+            purple: { main: '#8b5cf6', light: 'rgba(139, 92, 246, 0.15)', gradient: ['#8b5cf6', '#a78bfa'] },
+            cyan: { main: '#06b6d4', light: 'rgba(6, 182, 212, 0.15)', gradient: ['#06b6d4', '#22d3ee'] },
+            pink: { main: '#ec4899', light: 'rgba(236, 72, 153, 0.15)', gradient: ['#ec4899', '#f472b6'] },
+            palette: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899', '#f43f5e', '#84cc16', '#14b8a6', '#6366f1']
+        };
+ 
+        // ================== INITIALIZATION ==================
+        document.addEventListener('DOMContentLoaded', function () {
+            initializeCharts();
+            fetchDataFromGoogleSheets();
+            startAutoRefresh();
+        });
+ 
+        // ================== REAL-TIME DATA FETCHING ==================
+        function fetchDataFromGoogleSheets() {
+            updateLiveStatus('loading');
+ 
+            Papa.parse(GOOGLE_SHEET_CSV_URL, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: function (results) {
+                    allData = processCSVData(results.data);
+                    filteredData = [...allData];
+ 
+                    updateFilters();
+                    renderDashboard();
+                    updateLiveStatus('success');
+ 
+                    console.log(`[${new Date().toLocaleTimeString()}] ดึงข้อมูลสำเร็จ: ${allData.length} รายการ`);
+                },
+                error: function (error) {
+                    console.error('Error fetching data:', error);
+                    updateLiveStatus('error');
+                    showToast('ไม่สามารถดึงข้อมูลได้ กรุณาลองใหม่', 'error');
+                }
+            });
+        }
+ 
+        function startAutoRefresh() {
+            if (refreshInterval) clearInterval(refreshInterval);
+            refreshInterval = setInterval(() => {
+                console.log('Auto-refreshing data...');
+                fetchDataFromGoogleSheets();
+            }, REFRESH_INTERVAL_MS);
+            console.log(`Auto-refresh enabled: every ${REFRESH_INTERVAL_MS / 1000} seconds`);
+        }
+ 
+        function updateLiveStatus(status) {
+            const liveStatus = document.getElementById('liveStatus');
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+ 
+            if (status === 'loading') {
+                liveStatus.className = 'flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200';
+                liveStatus.innerHTML = `<i class="fas fa-sync fa-spin text-blue-500"></i><span class="text-xs text-blue-700">กำลังโหลด...</span>`;
+            } else if (status === 'success') {
+                liveStatus.className = 'flex items-center gap-2 px-3 py-2 rounded-lg bg-green-50 border border-green-200';
+                liveStatus.innerHTML = `
+                    <span class="relative flex h-3 w-3">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                    </span>
+                    <span class="text-xs text-green-700">Live</span>
+                    <span class="text-xs text-green-600">${timeStr}</span>`;
+            } else if (status === 'error') {
+                liveStatus.className = 'flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 border border-red-200';
+                liveStatus.innerHTML = `<i class="fas fa-exclamation-circle text-red-500"></i><span class="text-xs text-red-700">Error</span><span class="text-xs text-red-600">${timeStr}</span>`;
+            }
+        }
+ 
+        // ================== FILE UPLOAD ==================
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+ 
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                complete: function (results) {
+                    allData = processCSVData(results.data);
+                    filteredData = [...allData];
+                    updateFilters();
+                    renderDashboard();
+                    showToast('นำเข้าข้อมูลสำเร็จ ' + allData.length + ' รายการ', 'success');
+                },
+                error: function (error) {
+                    showToast('เกิดข้อผิดพลาด', 'error');
+                }
+            });
+        }
+ 
+        function processCSVData(rawData) {
+            return rawData.map(row => {
+                const timestampStr = row['ประทับเวลา'] || '';
+                let timestamp;
+                try {
+                    const [datePart, timePart] = timestampStr.split(', ');
+                    const [day, month, year] = datePart.split('/').map(Number);
+                    const [hour, minute, second] = (timePart || '12:00:00').split(':').map(Number);
+                    const adjustedYear = year > 2500 ? year - 543 : year;
+                    timestamp = new Date(adjustedYear, month - 1, day, hour || 0, minute || 0, second || 0);
+                } catch (e) {
+                    timestamp = new Date();
+                }
+                return {
+                    timestamp,
+                    type: row['ระบบ น้ำดื่มเกียรติศักดิ์ คุณมาใช้บริการ จุดไหน'] || 'จุดเบิกน้ำ',
+                    name: row['ชื่อ-นามสกุล (ชื่อจริง'] || '-',
+                    department: row['ต้นสังกัด'] || '-',
+                    quantity: parseInt(row['จำนวนแพ็คที่เบิก จำนวน/แพ็ค']) || 0
+                };
+            }).filter(item => item.quantity > 0).sort((a, b) => b.timestamp - a.timestamp);
+        }
+ 
+        // ================== FILTERS ==================
+        function updateFilters() {
+            const months = new Set();
+            const years = new Set();
+            allData.forEach(item => {
+                months.add(item.timestamp.getMonth());
+                years.add(item.timestamp.getFullYear());
+            });
+ 
+            const monthFilter = document.getElementById('monthFilter');
+            monthFilter.innerHTML = '<option value="all">ทุกเดือน</option>';
+            [...months].sort((a, b) => a - b).forEach(m => {
+                monthFilter.innerHTML += `<option value="${m}">${thaiMonthsFull[m]}</option>`;
+            });
+ 
+            const yearFilter = document.getElementById('yearFilter');
+            yearFilter.innerHTML = '<option value="all">ทุกปี</option>';
+            [...years].sort((a, b) => b - a).forEach(y => {
+                yearFilter.innerHTML += `<option value="${y}">${y + 543}</option>`;
+            });
+        }
+ 
+        function filterData() {
+            const month = document.getElementById('monthFilter').value;
+            const year = document.getElementById('yearFilter').value;
+ 
+            filteredData = allData.filter(item => {
+                const matchMonth = month === 'all' || item.timestamp.getMonth() === parseInt(month);
+                const matchYear = year === 'all' || item.timestamp.getFullYear() === parseInt(year);
+                return matchMonth && matchYear;
+            });
+            renderDashboard();
+        }
+ 
+        // ================== CHARTS INITIALIZATION ==================
+        function initializeCharts() {
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            };
+ 
+            // Daily Trend Chart
+            const dailyCtx = document.getElementById('dailyTrendChart').getContext('2d');
+            charts.dailyTrend = new Chart(dailyCtx, {
+                type: 'line',
+                data: { labels: [], datasets: [] },
+                options: {
+                    ...chartOptions,
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+ 
+            // Usage Donut Chart
+            const donutCtx = document.getElementById('usageDonutChart').getContext('2d');
+            charts.usageDonut = new Chart(donutCtx, {
+                type: 'doughnut',
+                data: { labels: ['เข้าสต๊อก', 'เบิกออก'], datasets: [{ data: [0, 0], backgroundColor: [colors.green.main, colors.blue.main], borderWidth: 0 }] },
+                options: { ...chartOptions, cutout: '70%' }
+            });
+ 
+            // Monthly Bar Chart
+            const monthlyCtx = document.getElementById('monthlyBarChart').getContext('2d');
+            charts.monthlyBar = new Chart(monthlyCtx, {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: {
+                    ...chartOptions,
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+ 
+            // Hourly Chart
+            const hourlyCtx = document.getElementById('hourlyChart').getContext('2d');
+            charts.hourly = new Chart(hourlyCtx, {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: {
+                    ...chartOptions,
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+ 
+        // ================== RENDER DASHBOARD ==================
+        function renderDashboard() {
+            // Filtered period stats (for the selected month/year)
+            const stockIn = filteredData.filter(d => d.type.includes('เติม')).reduce((sum, d) => sum + d.quantity, 0);
+            const stockOut = filteredData.filter(d => d.type.includes('เบิก')).reduce((sum, d) => sum + d.quantity, 0);
+ 
+            // TRUE remaining balance - always from ALL data (carry-over included)
+            const totalStockIn = allData.filter(d => d.type.includes('เติม')).reduce((sum, d) => sum + d.quantity, 0);
+            const totalStockOut = allData.filter(d => d.type.includes('เบิก')).reduce((sum, d) => sum + d.quantity, 0);
+            const remaining = totalStockIn - totalStockOut;
+ 
+            const ratio = stockIn > 0 ? Math.round((stockOut / stockIn) * 100) : 0;
+ 
+            // Update KPIs
+            document.getElementById('kpiStockIn').textContent = stockIn.toLocaleString();
+            document.getElementById('kpiStockOut').textContent = stockOut.toLocaleString();
+            document.getElementById('kpiRemaining').textContent = remaining.toLocaleString();
+            document.getElementById('kpiTransactions').textContent = filteredData.length.toLocaleString();
+            document.getElementById('kpiRatio').textContent = ratio + '%';
+ 
+            // Update progress bars
+            const maxVal = Math.max(stockIn, stockOut, 1);
+            document.getElementById('progressStockIn').style.width = ((stockIn / maxVal) * 100) + '%';
+            document.getElementById('progressStockOut').style.width = ((stockOut / maxVal) * 100) + '%';
+            document.getElementById('progressRemaining').style.width = Math.min(100, Math.max(0, (remaining / stockIn) * 100)) + '%';
+            document.getElementById('progressRatio').style.width = ratio + '%';
+ 
+            // Top Department
+            const deptStats = {};
+            filteredData.filter(d => d.type.includes('เบิก')).forEach(d => {
+                deptStats[d.department] = (deptStats[d.department] || 0) + d.quantity;
+            });
+            const sortedDepts = Object.entries(deptStats).sort((a, b) => b[1] - a[1]);
+            if (sortedDepts.length > 0) {
+                document.getElementById('kpiTopDept').textContent = sortedDepts[0][0];
+                document.getElementById('kpiTopDeptValue').textContent = sortedDepts[0][1] + ' แพ็ค';
+            }
+ 
+            // Donut Chart
+            document.getElementById('donutStockIn').textContent = stockIn;
+            document.getElementById('donutStockOut').textContent = stockOut;
+            charts.usageDonut.data.datasets[0].data = [stockIn, stockOut];
+            charts.usageDonut.update();
+ 
+            // Daily Trend (last 30 days)
+            const dailyData = {};
+            const last30Days = [];
+            for (let i = 29; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const key = d.toISOString().split('T')[0];
+                last30Days.push(key);
+                dailyData[key] = 0;
+            }
+            filteredData.filter(d => d.type.includes('เบิก')).forEach(d => {
+                const key = d.timestamp.toISOString().split('T')[0];
+                if (dailyData.hasOwnProperty(key)) dailyData[key] += d.quantity;
+            });
+            charts.dailyTrend.data.labels = last30Days.map(d => { const dt = new Date(d); return `${dt.getDate()} ${thaiMonths[dt.getMonth()]}`; });
+            charts.dailyTrend.data.datasets = [{
+                label: 'เบิกน้ำ (แพ็ค)',
+                data: last30Days.map(d => dailyData[d]),
+                borderColor: colors.cyan.main,
+                backgroundColor: colors.cyan.light,
+                fill: true,
+                tension: 0.4
+            }];
+            charts.dailyTrend.update();
+ 
+            // Monthly Bar
+            const monthlyData = {};
+            filteredData.forEach(d => {
+                const key = `${d.timestamp.getFullYear()}-${d.timestamp.getMonth()}`;
+                if (!monthlyData[key]) monthlyData[key] = { in: 0, out: 0 };
+                if (d.type.includes('เติม')) monthlyData[key].in += d.quantity;
+                else monthlyData[key].out += d.quantity;
+            });
+            const sortedMonths = Object.keys(monthlyData).sort();
+            charts.monthlyBar.data.labels = sortedMonths.map(k => { const [y, m] = k.split('-'); return `${thaiMonths[parseInt(m)]} ${parseInt(y) + 543}`; });
+            charts.monthlyBar.data.datasets = [
+                { label: 'เข้าสต๊อก', data: sortedMonths.map(k => monthlyData[k].in), backgroundColor: colors.green.main },
+                { label: 'เบิกออก', data: sortedMonths.map(k => monthlyData[k].out), backgroundColor: colors.blue.main }
+            ];
+            charts.monthlyBar.options.plugins.legend.display = true;
+            charts.monthlyBar.update();
+ 
+            // Hourly Chart
+            const hourlyData = Array(24).fill(0);
+            filteredData.filter(d => d.type.includes('เบิก')).forEach(d => { hourlyData[d.timestamp.getHours()] += d.quantity; });
+            charts.hourly.data.labels = hourlyData.map((_, i) => `${i}:00`);
+            charts.hourly.data.datasets = [{ label: 'เบิกน้ำ', data: hourlyData, backgroundColor: colors.orange.main }];
+            charts.hourly.update();
+ 
+            // Top 5 Employees
+            const empStats = {};
+            filteredData.filter(d => d.type.includes('เบิก')).forEach(d => { empStats[d.name] = (empStats[d.name] || 0) + d.quantity; });
+            const top5Emp = Object.entries(empStats).sort((a, b) => b[1] - a[1]).slice(0, 5);
+            const empContainer = document.getElementById('top5Employees');
+            empContainer.innerHTML = top5Emp.map((e, i) => `
+                <div class="rank-item">
+                    <div class="flex items-center gap-3">
+                        <div class="rank-number ${i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : 'rank-other'}">${i + 1}</div>
+                        <span class="text-sm font-medium text-primary">${e[0]}</span>
+                    </div>
+                    <span class="badge badge-green">${e[1]} แพ็ค</span>
+                </div>
+            `).join('');
+ 
+            // Top 5 Departments
+            const top5Dept = sortedDepts.slice(0, 5);
+            const deptContainer = document.getElementById('top5Departments');
+            deptContainer.innerHTML = top5Dept.map((d, i) => `
+                <div class="rank-item">
+                    <div class="flex items-center gap-3">
+                        <div class="rank-number ${i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : 'rank-other'}">${i + 1}</div>
+                        <span class="text-sm font-medium text-primary">${d[0]}</span>
+                    </div>
+                    <span class="badge badge-purple">${d[1]} แพ็ค</span>
+                </div>
+            `).join('');
+ 
+            // Data Table
+            const tableBody = document.getElementById('dataTableBody');
+            const displayData = filteredData.slice(0, 50);
+            tableBody.innerHTML = displayData.map((d, i) => `
+                <tr>
+                    <td class="font-medium">${i + 1}</td>
+                    <td>${d.timestamp.toLocaleDateString('th-TH')} ${d.timestamp.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}</td>
+                    <td><span class="badge ${d.type.includes('เติม') ? 'badge-green' : 'badge-blue'}">${d.type.includes('เติม') ? 'เติมสต๊อก' : 'เบิกน้ำ'}</span></td>
+                    <td>${d.name}</td>
+                    <td>${d.department}</td>
+                    <td class="text-right font-bold">${d.quantity}</td>
+                </tr>
+            `).join('');
+ 
+            // Update table stats
+            const stockInCount = filteredData.filter(d => d.type.includes('เติม')).length;
+            const stockOutCount = filteredData.filter(d => d.type.includes('เบิก')).length;
+            document.getElementById('tableCount').innerHTML = `<i class="fas fa-database"></i> ${filteredData.length} รายการ`;
+            document.getElementById('tableStockIn').innerHTML = `<i class="fas fa-arrow-down"></i> เติม: ${stockInCount}`;
+            document.getElementById('tableStockOut').innerHTML = `<i class="fas fa-arrow-up"></i> เบิก: ${stockOutCount}`;
+        }
+ 
+        // ================== TOAST NOTIFICATION ==================
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} mr-2"></i>${message}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+    </script>
+</body>
+ 
+</html>
